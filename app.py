@@ -2,10 +2,10 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import torch
 import torch.nn as nn
-from PIL import Image
 import numpy as np
 import cv2
 from torchvision import models, transforms
+from PIL import Image
 import os
 import warnings
 
@@ -61,40 +61,46 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-@app.route('/predict', methods=['POST'])
+# Update this route to handle both GET and POST
+@app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    file = request.files.get('file')  # Use get() to avoid KeyError
-    if not file:
-        return jsonify({'error': 'No file provided'}), 400
+    if request.method == 'GET':
+        # Handle the GET request (for displaying the form or info)
+        return render_template('predict_form.html')
 
-    print(f"Received file: {file.filename}")  # Log file name for debugging
+    if request.method == 'POST':
+        file = request.files.get('file')  # Use get() to avoid KeyError
+        if not file:
+            return jsonify({'error': 'No file provided'}), 400
 
-    # Read the image as a numpy array
-    np_img = np.frombuffer(file.read(), np.uint8)
-    img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+        print(f"Received file: {file.filename}")  # Log file name for debugging
 
-    if img is None:
-        return jsonify({'error': 'Invalid image format'}), 400
+        # Read the image as a numpy array
+        np_img = np.frombuffer(file.read(), np.uint8)
+        img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
-    # Convert BGR to RGB
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if img is None:
+            return jsonify({'error': 'Invalid image format'}), 400
 
-    # Convert NumPy array (OpenCV image) to PIL Image
-    pil_img = Image.fromarray(img)
+        # Convert BGR to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    # Apply the transformation
-    img = transform(pil_img)
-    img = img.unsqueeze(0).to(device)  # Add batch dimension and move to device
+        # Convert NumPy array (OpenCV image) to PIL Image
+        pil_img = Image.fromarray(img)
 
-    # Make the prediction without tracking gradients
-    with torch.no_grad():
-        output = model(img)
-        _, predicted = torch.max(output, 1)  # Get the predicted class
+        # Apply the transformation
+        img = transform(pil_img)
+        img = img.unsqueeze(0).to(device)  # Add batch dimension and move to device
 
-        # Map the prediction to class labels (assuming 0 is 'Good' and 1 is 'Defective')
-        result = "Defective" if predicted.item() == 1 else "Good"
+        # Make the prediction without tracking gradients
+        with torch.no_grad():
+            output = model(img)
+            _, predicted = torch.max(output, 1)  # Get the predicted class
 
-    return jsonify({'result': result})
+            # Map the prediction to class labels (assuming 0 is 'Good' and 1 is 'Defective')
+            result = "Defective" if predicted.item() == 1 else "Good"
+
+        return jsonify({'result': result})
 
 if __name__ == '__main__':
     app.run(debug=True)
