@@ -63,15 +63,24 @@
             font-size: 18px;
             color: #555;
         }
+
+        #loading {
+            display: none;
+            font-size: 16px;
+            color: #007bff;
+        }
     </style>
 </head>
 
 <body>
-    <h2>Upload Tyre Detection</h2>
+    <h2>Upload Tire Image for Defect Detection</h2>
+    
     <form id="uploadForm" enctype="multipart/form-data" onsubmit="return false;">
         <input type="file" id="fileInput" name="file" accept="image/*" required>
         <button type="button" onclick="uploadImage()">Predict</button>
     </form>
+    
+    <p id="loading" style="display:none;">Processing...</p>
     <p id="result"></p>
 
     <script>
@@ -79,6 +88,7 @@
             let formData = new FormData();
             let fileInput = document.getElementById("fileInput");
             let resultText = document.getElementById("result");
+            let loadingText = document.getElementById("loading");
     
             if (fileInput.files.length === 0) {
                 alert("Please select an image first.");
@@ -86,7 +96,8 @@
             }
     
             formData.append("file", fileInput.files[0]);
-            resultText.innerText = "Processing...";
+            resultText.innerText = "";  // Clear any previous result
+            loadingText.style.display = "block";  // Show loading text
     
             fetch("https://cnn-e0sr.onrender.com/predict", {
                 method: "POST",
@@ -99,6 +110,8 @@
                 return response.json(); // Expect JSON response from the server
             })
             .then(data => {
+                loadingText.style.display = "none";  // Hide loading text
+                
                 if (data.error) {
                     resultText.innerText = `Error: ${data.error}`; // Show error message
                 } else {
@@ -106,10 +119,14 @@
                 }
             })
             .catch(error => {
+                loadingText.style.display = "none";  // Hide loading text
                 resultText.innerText = "Error: Unable to process the request.";
                 console.error("Error:", error);
             });
         }
+
+        // Optional: You could add logic for a GET request if needed
+        // For now, we assume the page simply renders the form when accessed.
     </script>
 
 </body>
