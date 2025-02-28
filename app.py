@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import torch
 import torch.nn as nn
+from PIL import Image
 import numpy as np
 import cv2
 from torchvision import models, transforms
@@ -68,16 +69,21 @@ def predict():
 
     print(f"Received file: {file.filename}")  # Log file name for debugging
 
-    # Read the image
+    # Read the image as a numpy array
     np_img = np.frombuffer(file.read(), np.uint8)
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
     if img is None:
         return jsonify({'error': 'Invalid image format'}), 400
 
-    # Apply transformations to the image
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for ResNet
-    img = transform(img)  # Apply the transformation
+    # Convert BGR to RGB
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Convert NumPy array (OpenCV image) to PIL Image
+    pil_img = Image.fromarray(img)
+
+    # Apply the transformation
+    img = transform(pil_img)
     img = img.unsqueeze(0).to(device)  # Add batch dimension and move to device
 
     # Make the prediction without tracking gradients
