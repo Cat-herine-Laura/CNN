@@ -88,7 +88,7 @@
             formData.append("file", fileInput.files[0]);
             resultText.innerText = "Processing...";
     
-            fetch("cnn-q4ry:10000/predict", {
+            fetch("https://cnn-e0sr.onrender.com/predict", {
                 method: "POST",
                 body: formData
             })
